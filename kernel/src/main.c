@@ -7,7 +7,7 @@
 // base revision described by the Limine boot protocol specification.
 // See specification for further info.
 
-__attribute__((used, section(".requests")))
+__attribute__((used, section(".limine_requests")))
 static volatile LIMINE_BASE_REVISION(3);
 
 // The Limine requests can be placed anywhere, but it is important that
@@ -15,7 +15,7 @@ static volatile LIMINE_BASE_REVISION(3);
 // be made volatile or equivalent, _and_ they should be accessed at least
 // once or marked as used with the "used" attribute as done here.
 
-__attribute__((used, section(".requests")))
+__attribute__((used, section(".limine_requests")))
 static volatile struct limine_framebuffer_request framebuffer_request = {
     .id = LIMINE_FRAMEBUFFER_REQUEST,
     .revision = 0
@@ -24,10 +24,10 @@ static volatile struct limine_framebuffer_request framebuffer_request = {
 // Finally, define the start and end markers for the Limine requests.
 // These can also be moved anywhere, to any .c file, as seen fit.
 
-__attribute__((used, section(".requests_start_marker")))
+__attribute__((used, section(".limine_requests_start")))
 static volatile LIMINE_REQUESTS_START_MARKER;
 
-__attribute__((used, section(".requests_end_marker")))
+__attribute__((used, section(".limine_requests_end")))
 static volatile LIMINE_REQUESTS_END_MARKER;
 
 // GCC and Clang reserve the right to generate calls to the following
