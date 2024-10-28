@@ -8,7 +8,7 @@
 // See specification for further info.
 
 __attribute__((used, section(".requests")))
-static volatile LIMINE_BASE_REVISION(2);
+static volatile LIMINE_BASE_REVISION(3);
 
 // The Limine requests can be placed anywhere, but it is important that
 // the compiler does not optimise them away, so, usually, they should
