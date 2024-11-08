@@ -26,6 +26,9 @@ endif
 # User controllable C compiler command.
 $(call USER_VARIABLE,KCC,cc)
 
+# User controllable archiver command.
+$(call USER_VARIABLE,KAR,ar)
+
 # User controllable linker command.
 $(call USER_VARIABLE,KLD,ld)
 
@@ -45,7 +48,7 @@ $(call USER_VARIABLE,KLDFLAGS,)
 
 # Ensure the dependencies have been obtained.
 ifneq ($(shell ( test '$(MAKECMDGOALS)' = clean || test '$(MAKECMDGOALS)' = distclean ); echo $$?),0)
-    ifeq ($(shell ( ! test -d freestnd-c-hdrs-0bsd || ! test -f src/cc-runtime.c || ! test -f src/limine.h ); echo $$?),0)
+    ifeq ($(shell ( ! test -d freestnd-c-hdrs-0bsd || ! test -d cc-runtime || ! test -f src/limine.h ); echo $$?),0)
         $(error Please run the ./get-deps script first)
     endif
 endif
@@ -166,10 +169,19 @@ override HEADER_DEPS := $(addprefix obj-$(KARCH)/,$(CFILES:.c=.c.d) $(ASFILES:.S
 .PHONY: all
 all: bin-$(KARCH)/$(OUTPUT)
 
+# Link rules for building the C compiler runtime.
+cc-runtime-$(KARCH)/cc-runtime.a: cc-runtime/*
+	cp -r cc-runtime cc-runtime-$(KARCH)
+	$(MAKE) -C cc-runtime-$(KARCH) -f cc-runtime.mk \
+		CC="$(KCC)" \
+		AR="$(KAR)" \
+		CFLAGS="$(KCFLAGS)" \
+		CPPFLAGS='-isystem ../freestnd-c-hdrs-0bsd -DCC_RUNTIME_NO_FLOAT'
+
 # Link rules for the final executable.
-bin-$(KARCH)/$(OUTPUT): GNUmakefile linker-$(KARCH).ld $(OBJ)
+bin-$(KARCH)/$(OUTPUT): GNUmakefile linker-$(KARCH).ld $(OBJ) cc-runtime-$(KARCH)/cc-runtime.a
 	mkdir -p "$$(dirname $@)"
-	$(KLD) $(OBJ) $(KLDFLAGS) -o $@
+	$(KLD) $(OBJ) cc-runtime-$(KARCH)/cc-runtime.a $(KLDFLAGS) -o $@
 
 # Include header dependencies.
 -include $(HEADER_DEPS)
@@ -194,12 +206,12 @@ endif
 # Remove object files and the final executable.
 .PHONY: clean
 clean:
-	rm -rf bin-$(KARCH) obj-$(KARCH)
+	rm -rf bin-$(KARCH) obj-$(KARCH) cc-runtime-$(KARCH)
 
 # Remove everything built and generated including downloaded dependencies.
 .PHONY: distclean
 distclean:
-	rm -rf bin-* obj-* freestnd-c-hdrs-0bsd src/cc-runtime.c src/limine.h
+	rm -rf bin-* obj-* freestnd-c-hdrs-0bsd cc-runtime* src/limine.h
 
 # Install the final built executable to its final on-root location.
 .PHONY: install
