@@ -171,6 +171,7 @@ all: bin-$(KARCH)/$(OUTPUT)
 
 # Link rules for building the C compiler runtime.
 cc-runtime-$(KARCH)/cc-runtime.a: cc-runtime/*
+	rm -rf cc-runtime-$(KARCH)
 	cp -r cc-runtime cc-runtime-$(KARCH)
 	$(MAKE) -C cc-runtime-$(KARCH) -f cc-runtime.mk \
 		CC="$(KCC)" \
