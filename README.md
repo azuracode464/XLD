@@ -14,9 +14,9 @@ Additionally, building an ISO with `make all` requires `xorriso`, and building a
 
 ### Architectural targets
 
-The `KARCH` make variable determines the target architecture to build the kernel and image for.
+The `ARCH` make variable determines the target architecture to build the kernel and image for.
 
-The default `KARCH` is `x86_64`. Other options include: `aarch64`, `loongarch64`, and `riscv64`.
+The default `ARCH` is `x86_64`. Other options include: `aarch64`, `loongarch64`, and `riscv64`.
 
 ### Makefile targets
 
