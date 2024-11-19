@@ -2,16 +2,20 @@
 MAKEFLAGS += -rR
 .SUFFIXES:
 
-# Convenience macro to reliably declare user overridable variables.
-override USER_VARIABLE = $(if $(filter $(origin $(1)),default undefined),$(eval override $(1) := $(2)))
-
 # Target architecture to build for. Default to x86_64.
-$(call USER_VARIABLE,ARCH,x86_64)
+ARCH := x86_64
 
 # Default user QEMU flags. These are appended to the QEMU command calls.
-$(call USER_VARIABLE,QEMUFLAGS,-m 2G)
+QEMUFLAGS := -m 2G
 
 override IMAGE_NAME := template-$(ARCH)
+
+# Toolchain for building the 'limine' executable for the host.
+HOST_CC := cc
+HOST_CFLAGS := -g -O2 -pipe
+HOST_CPPFLAGS :=
+HOST_LDFLAGS :=
+HOST_LIBS :=
 
 .PHONY: all
 all: $(IMAGE_NAME).iso
@@ -146,7 +150,12 @@ ovmf/ovmf-code-$(ARCH).fd:
 limine/limine:
 	rm -rf limine
 	git clone https://github.com/limine-bootloader/limine.git --branch=v8.x-binary --depth=1
-	$(MAKE) -C limine
+	$(MAKE) -C limine \
+		CC="$(HOST_CC)" \
+		CFLAGS="$(HOST_CFLAGS)" \
+		CPPFLAGS="$(HOST_CPPFLAGS)" \
+		LDFLAGS="$(HOST_LDFLAGS)" \
+		LIBS="$(HOST_LIBS)"
 
 kernel-deps:
 	./kernel/get-deps
