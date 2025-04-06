@@ -20,9 +20,6 @@ endif
 # User controllable C compiler command.
 CC := cc
 
-# User controllable archiver command.
-AR := ar
-
 # User controllable C flags.
 CFLAGS := -g -O2 -pipe
 
@@ -39,7 +36,7 @@ LDFLAGS :=
 
 # Ensure the dependencies have been obtained.
 ifneq ($(shell ( test '$(MAKECMDGOALS)' = clean || test '$(MAKECMDGOALS)' = distclean ); echo $$?),0)
-    ifeq ($(shell ( ! test -d freestnd-c-hdrs || ! test -d cc-runtime || ! test -f src/limine.h ); echo $$?),0)
+    ifeq ($(shell ( ! test -d freestnd-c-hdrs || ! test -d src/cc-runtime || ! test -f src/limine.h ); echo $$?),0)
         $(error Please run the ./get-deps script first)
     endif
 endif
@@ -165,20 +162,10 @@ all: bin-$(ARCH)/$(OUTPUT)
 # Include header dependencies.
 -include $(HEADER_DEPS)
 
-# Link rules for building the C compiler runtime.
-cc-runtime-$(ARCH)/cc-runtime.a: GNUmakefile cc-runtime/*
-	rm -rf cc-runtime-$(ARCH)
-	cp -r cc-runtime cc-runtime-$(ARCH)
-	$(MAKE) -C cc-runtime-$(ARCH) -f cc-runtime.mk \
-		CC="$(CC)" \
-		AR="$(AR)" \
-		CFLAGS="$(CFLAGS)" \
-		CPPFLAGS='-isystem ../freestnd-c-hdrs -DCC_RUNTIME_NO_FLOAT'
-
 # Link rules for the final executable.
-bin-$(ARCH)/$(OUTPUT): GNUmakefile linker-$(ARCH).ld $(OBJ) cc-runtime-$(ARCH)/cc-runtime.a
+bin-$(ARCH)/$(OUTPUT): GNUmakefile linker-$(ARCH).ld $(OBJ)
 	mkdir -p "$$(dirname $@)"
-	$(CC) $(CFLAGS) $(LDFLAGS) $(OBJ) cc-runtime-$(ARCH)/cc-runtime.a -o $@
+	$(CC) $(CFLAGS) $(LDFLAGS) $(OBJ) -o $@
 
 # Compilation rules for *.c files.
 obj-$(ARCH)/%.c.o: src/%.c GNUmakefile
@@ -200,12 +187,12 @@ endif
 # Remove object files and the final executable.
 .PHONY: clean
 clean:
-	rm -rf bin-$(ARCH) obj-$(ARCH) cc-runtime-$(ARCH)
+	rm -rf bin-$(ARCH) obj-$(ARCH)
 
 # Remove everything built and generated including downloaded dependencies.
 .PHONY: distclean
 distclean:
-	rm -rf bin-* obj-* freestnd-c-hdrs cc-runtime* src/limine.h
+	rm -rf bin-* obj-* freestnd-c-hdrs src/cc-runtime src/limine.h
 
 # Install the final built executable to its final on-root location.
 .PHONY: install
