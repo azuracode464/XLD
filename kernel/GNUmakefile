@@ -166,7 +166,7 @@ override LDFLAGS += \
 
 # Use "find" to glob all *.c, *.S, and *.asm files in the tree and obtain the
 # object and header dependency file names.
-override SRCFILES := $(shell find -L src cc-runtime/src -type f | LC_ALL=C sort)
+override SRCFILES := $(shell find -L src cc-runtime/src -type f 2>/dev/null | LC_ALL=C sort)
 override CFILES := $(filter %.c,$(SRCFILES))
 override ASFILES := $(filter %.S,$(SRCFILES))
 ifeq ($(ARCH),x86_64)
