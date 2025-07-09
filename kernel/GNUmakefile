@@ -161,7 +161,7 @@ override LDFLAGS += \
     -nostdlib \
     -static \
     -z max-page-size=0x1000 \
-    -gc-sections \
+    --gc-sections \
     -T linker-$(ARCH).ld
 
 # Use "find" to glob all *.c, *.S, and *.asm files in the tree and obtain the
