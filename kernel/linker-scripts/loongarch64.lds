@@ -44,6 +44,10 @@ SECTIONS
         *(.rodata .rodata.*)
     } :rodata
 
+    .note.gnu.build-id : {
+        *(.note.gnu.build-id)
+    } :rodata
+
     /* Move to the next memory page for .data */
     . = ALIGN(CONSTANT(MAXPAGESIZE));
 
