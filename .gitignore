@@ -1,0 +1,16 @@
+# Arquivos gerados pelo script de build
+*.iso
+*.o
+*.bin
+
+# Pasta de build (se o seu script criar uma)
+build/
+dist/
+/limine
+# Arquivos de configuração de editores de código
+.vscode/
+.idea/
+
+# Arquivos de sistema operacional (como Thumbs.db do Windows ou .DS_Store do macOS)
+Thumbs.db
+.DS_Store
