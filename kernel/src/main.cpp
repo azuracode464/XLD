@@ -1,7 +1,7 @@
 #include <cstdint>
 #include <cstddef>
 #include <limine.h>
-
+#include "graphics.hpp"
 // Set the base revision to 3, this is recommended as this is the latest
 // base revision described by the Limine boot protocol specification.
 // See specification for further info.
@@ -155,14 +155,15 @@ extern "C" void kmain() {
     }
 
     // Fetch the first framebuffer.
-    limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
-
+    limine_framebuffer* fb = framebuffer_request.response->framebuffers[0];
+    volatile uint32_t* fb_ptr = (volatile uint32_t*)fb->address;
     // Note: we assume the framebuffer model is RGB with 32-bit pixels.
-    for (std::size_t i = 0; i < 100; i++) {
-        volatile std::uint32_t *fb_ptr = static_cast<volatile std::uint32_t *>(framebuffer->address);
-        fb_ptr[i * (framebuffer->pitch / 4) + i] = 0xffffff;
-    }
+    Graphics gfx(fb_ptr, fb->pitch);
 
+    gfx.draw_rect(10,10,50,50,0xFF0000);     // Retângulo vermelho
+    gfx.draw_circle(100,50,30,0x00FF00);     // Círculo verde
+    gfx.draw_triangle(150,10,180,60,120,60,0x0000FF); // Triângulo azul
+    gfx.draw_text("HELLO XLD", 10, 100, 0xFFFFFF);    // Texto branco
     // We're done, just hang...
     hcf();
 }

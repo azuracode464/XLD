@@ -88,8 +88,11 @@ override SHARED_FLAGS := \
     -ffunction-sections \
     -fdata-sections
 
+
 # Internal C/C++ preprocessor flags that should not be changed by the user.
 override CPPFLAGS_C := \
+    -I src/libc \
+    -I src/xldgl \
     -I src \
     -I limine-protocol/include \
     -isystem freestnd-c-hdrs/$(ARCH)/include \
