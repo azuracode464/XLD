@@ -5,7 +5,7 @@
 ARCH := x86_64
 
 # Default user QEMU flags. These are appended to the QEMU command calls.
-QEMUFLAGS := -m 256M -vnc :0
+QEMUFLAGS := -m 256M -vnc :0 -d int,cpu_reset -D /sdcard/qemu_log.txt
 
 override IMAGE_NAME := XLD
 
