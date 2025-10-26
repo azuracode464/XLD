@@ -134,13 +134,9 @@ ifeq ($(ARCH),riscv64)
     ifeq ($(CC_IS_CLANG),1)
         override CC += \
             -target riscv64-unknown-none-elf
-        override CFLAGS += \
-            -march=rv64imac
-    else
-        override CFLAGS += \
-            -march=rv64imac_zicsr_zifencei
     endif
     override CFLAGS += \
+        -march=rv64imac_zicsr_zifencei \
         -mabi=lp64 \
         -mno-relax
     override LDFLAGS += \
