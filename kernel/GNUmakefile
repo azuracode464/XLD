@@ -91,6 +91,7 @@ override SHARED_FLAGS := \
 
 # Internal C/C++ preprocessor flags that should not be changed by the user.
 override CPPFLAGS_C := \
+<<<<<<< Updated upstream
     -I src/acpi \
     -I src/smp \
     -I src/drivers \
@@ -98,6 +99,9 @@ override CPPFLAGS_C := \
     -I src/cpu \
     -I src/cpu/gdt \
     -I src/cpu/idt \
+=======
+    -I src/idt \
+>>>>>>> Stashed changes
     -I src/libc \
     -I src/xldgl \
     -I src \

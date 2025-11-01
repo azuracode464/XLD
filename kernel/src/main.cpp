@@ -4,6 +4,7 @@
 
 // Nossos cabeçalhos do kernel
 #include "graphics.hpp"
+<<<<<<< Updated upstream
 #include "idt.hpp"
 #include "pic.hpp"
 #include "io.hpp"
@@ -15,6 +16,14 @@
 // REQUISIÇÕES E CONFIGURAÇÕES DO BOOTLOADER LIMINE
 // =============================================================================
 
+=======
+// ... includes ...
+#include "idt/idt.hpp" // Inclui nosso novo header
+// Set the base revision to 3, this is recommended as this is the latest
+// base revision described by the Limine boot protocol specification.
+// See specification for further info.
+extern Graphics* g_gfx;
+>>>>>>> Stashed changes
 namespace {
     // Requisição para o bootloader usar a revisão 3 do protocolo.
     __attribute__((used, section(".limine_requests")))
@@ -110,6 +119,7 @@ extern "C" void kmain() {
         hcf();
     }
     limine_framebuffer* fb = framebuffer_request.response->framebuffers[0];
+<<<<<<< Updated upstream
     Graphics gfx_instance((volatile uint32_t*)fb->address, fb->pitch);
     g_gfx = &gfx_instance;
 
@@ -135,6 +145,18 @@ extern "C" void kmain() {
 
     // Por enquanto, paramos aqui para celebrar nossa primeira vitória.
     // O próximo passo seria inicializar a IDT e o APIC usando as informações coletadas.
+=======
+    volatile uint32_t* fb_ptr = (volatile uint32_t*)fb->address;
+    // Note: we assume the framebuffer model is RGB with 32-bit pixels.
+    Graphics gfx(fb_ptr, fb->pitch);
+    g_gfx = &gfx;
+    initialize_interrupts();
+    gfx.draw_rect(10,10,50,50,0xFF0000);     // Retângulo vermelho
+    gfx.draw_circle(100,50,30,0x00FF00);     // Círculo verde
+    gfx.draw_triangle(150,10,180,60,120,60,0x0000FF); // Triângulo azul
+    gfx.draw_text("HELLO XLD", 10, 100, 0xFFFFFF);    // Texto branco
+    // We're done, just hang...
+>>>>>>> Stashed changes
     hcf();
 }
 
