@@ -1,3 +1,5 @@
+// ARQUIVO MODIFICADO: kernel/src/main.cpp
+
 #include <cstdint>
 #include <cstddef>
 #include <limine.h>
@@ -6,7 +8,13 @@
 #include "xldgl/graphics.hpp"
 #include "drivers/keyboard/keyboard.hpp"
 #include "apps/terminal/terminal.hpp"
+#include "drivers/ata/ata.hpp"
+#include "drivers/fs/exfat.hpp" // <<< PASSO 1: Incluir o header do exFAT
 
+// --- CONFIGURAÇÃO DO BOOTLOADER LIMINE ---
+namespace {
+    // ... (sem mudanças aqui) ...
+}
 // --- CONFIGURAÇÃO DO BOOTLOADER LIMINE ---
 namespace {
     __attribute__((used, section(".limine_requests")))
@@ -21,13 +29,8 @@ namespace {
 }
 
 // --- FUNÇÕES BÁSICAS DE C E STUBS DO C++ ABI ---
-// (O código de baixo nível que não precisamos mexer mais)
 extern "C" {
-    void *memcpy(void *d, const void *s, size_t n) { for(size_t i=0;i<n;i++) ((char*)d)[i]=((char*)s)[i]; return d; }
-    void *memset(void *s, int c, size_t n) { for(size_t i=0;i<n;i++) ((char*)s)[i]=(char)c; return s; }
-    int __cxa_atexit(void (*)(void *), void *, void *) { return 0; }
-    void __cxa_pure_virtual() { for(;;); }
-    void *__dso_handle;
+    // ... (sem mudanças aqui) ...
 }
 
 // --- FUNÇÃO DE PÂNICO ---
@@ -45,13 +48,20 @@ extern "C" void kmain() {
     // 2. Inicializa os Módulos em Ordem
     GFX::init(framebuffer);
     Keyboard::init();
+    ATA::init();
+    
+    // <<< PASSO 2: Chamar a inicialização do exFAT >>>
+    // Colocamos dentro de um if para podermos tratar um erro, se ocorrer.
+    if (!exFAT::initialize_volume()) {
+        // Se não conseguir inicializar o volume, podemos imprimir um erro no futuro.
+        // Por enquanto, apenas continuamos. O terminal ainda deve funcionar.
+    }
+
     Terminal::init();
 
     // 3. Entrega o controle para o Terminal
-    // A partir daqui, o Terminal é o dono do sistema.
     Terminal::run();
 
-    // O código nunca deve chegar aqui.
     hcf();
 }
 
