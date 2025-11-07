@@ -8,7 +8,7 @@
 // See specification for further info.
 
 __attribute__((used, section(".limine_requests")))
-static volatile LIMINE_BASE_REVISION(4);
+static volatile uint64_t limine_base_revision[] = LIMINE_BASE_REVISION(4);
 
 // The Limine requests can be placed anywhere, but it is important that
 // the compiler does not optimise them away, so, usually, they should
@@ -17,7 +17,7 @@ static volatile LIMINE_BASE_REVISION(4);
 
 __attribute__((used, section(".limine_requests")))
 static volatile struct limine_framebuffer_request framebuffer_request = {
-    .id = LIMINE_FRAMEBUFFER_REQUEST,
+    .id = LIMINE_FRAMEBUFFER_REQUEST_ID,
     .revision = 0
 };
 
@@ -25,10 +25,10 @@ static volatile struct limine_framebuffer_request framebuffer_request = {
 // These can also be moved anywhere, to any .c file, as seen fit.
 
 __attribute__((used, section(".limine_requests_start")))
-static volatile LIMINE_REQUESTS_START_MARKER;
+static volatile uint64_t limine_requests_start_marker[] = LIMINE_REQUESTS_START_MARKER;
 
 __attribute__((used, section(".limine_requests_end")))
-static volatile LIMINE_REQUESTS_END_MARKER;
+static volatile uint64_t limine_requests_end_marker[] = LIMINE_REQUESTS_END_MARKER;
 
 // GCC and Clang reserve the right to generate calls to the following
 // 4 functions even if they are not directly called.
@@ -105,7 +105,7 @@ static void hcf(void) {
 // linker script accordingly.
 void kmain(void) {
     // Ensure the bootloader actually understands our base revision (see spec).
-    if (LIMINE_BASE_REVISION_SUPPORTED == false) {
+    if (LIMINE_BASE_REVISION_SUPPORTED(limine_base_revision) == false) {
         hcf();
     }
 
