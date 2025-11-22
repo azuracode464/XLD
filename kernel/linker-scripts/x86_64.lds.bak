@@ -23,15 +23,6 @@ SECTIONS
     /* that is the beginning of the region. */
     . = 0xffffffff80000000;
 
-    /* ======================= INÍCIO DA MODIFICAÇÃO ======================= */
-    /*
-     * Define a base física do kernel. O bootloader (Limine) irá carregar
-     * o kernel neste endereço físico. 1MB (0x100000) é um local seguro
-     * para evitar a memória baixa usada pelo BIOS.
-    */
-    . += 0x100000;
-    /* ======================== FIM DA MODIFICAÇÃO ========================= */
-
     /* Define a section to contain the Limine requests and assign it to its own PHDR */
     .limine_requests : {
         KEEP(*(.limine_requests_start))
@@ -42,20 +33,9 @@ SECTIONS
     /* Move to the next memory page for .text */
     . = ALIGN(CONSTANT(MAXPAGESIZE));
 
-    /* ======================= INÍCIO DA MODIFICAÇÃO ======================= */
-    /*
-     * A seção .text (e as seguintes) serão colocadas no endereço virtual
-     * calculado acima, mas o linker saberá que o endereço de carregamento
-     * (físico) começa em 0x100000.
-     * A sintaxe `AT(ADDR)` especifica o "Load Memory Address" (LMA),
-     * enquanto o `.` especifica o "Virtual Memory Address" (VMA).
-     * `_text_lma_start` é um símbolo que criamos para marcar o início do LMA.
-    */
-    _text_lma_start = 0x100000;
-    .text : AT(_text_lma_start) {
+    .text : {
         *(.text .text.*)
     } :text
-    /* ======================== FIM DA MODIFICAÇÃO ========================= */
 
     /* Move to the next memory page for .rodata */
     . = ALIGN(CONSTANT(MAXPAGESIZE));
@@ -92,4 +72,3 @@ SECTIONS
         *(.note .note.*)
     }
 }
-

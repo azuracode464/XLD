@@ -1,9 +1,15 @@
 #include "idt.h"
 #include "../xldui/xldui.h"
+#include "../scheduler/task.h"
 #include <stddef.h>
 
-extern void idt_load(struct idt_ptr*);
+// =================== INÍCIO DA CORREÇÃO ===================
+// Mover a definição para o escopo do arquivo (topo)
+#define KERNEL_CODE_SELECTOR 0x08
+// ==================== FIM DA CORREÇÃO =====================
 
+// Protótipos das funções em idt_asm.asm
+extern void idt_load(struct idt_ptr*);
 extern void isr0(); extern void isr1(); extern void isr2(); extern void isr3();
 extern void isr4(); extern void isr5(); extern void isr6(); extern void isr7();
 extern void isr8(); extern void isr9(); extern void isr10(); extern void isr11();
@@ -14,6 +20,7 @@ extern void isr24(); extern void isr25(); extern void isr26(); extern void isr27
 extern void isr28(); extern void isr29(); extern void isr30(); extern void isr31();
 extern void irq0();
 extern void irq1();
+extern void isr128();
 
 static struct idt_entry idt[256];
 static struct idt_ptr idtp;
@@ -38,7 +45,21 @@ static void idt_set_gate(uint8_t num, uint64_t base, uint16_t sel, uint8_t flags
     idt[num].zero = 0;
 }
 
-void isr_handler(uint8_t isr_num) {
+static void u64_to_hex(uint64_t value, char* str) {
+    const char* hex_chars = "0123456789ABCDEF";
+    str[0] = '0';
+    str[1] = 'x';
+    str[18] = '\0';
+    for (int i = 15; i >= 0; i--) {
+        str[2 + (15 - i)] = hex_chars[(value >> (i * 4)) & 0xF];
+    }
+}
+
+// =================== INÍCIO DA CORREÇÃO ===================
+// Silenciando o aviso de parâmetro não utilizado.
+void isr_handler(cpu_state_t *state, uint64_t isr_num) {
+    (void)state; // Informa ao compilador que 'state' é intencionalmente não utilizado.
+// ==================== FIM DA CORREÇÃO =====================
     console_set_color(0xFF0000);
     console_print("\n\n================ KERNEL PANIC ================\n");
     console_print("  UNHANDLED EXCEPTION: ");
@@ -48,8 +69,19 @@ void isr_handler(uint8_t isr_num) {
     } else {
         console_print("Unknown Interrupt");
     }
+    console_print("\n");
+
+    if (isr_num == 14) { // Page Fault
+        uint64_t fault_addr;
+        asm volatile("mov %%cr2, %0" : "=r"(fault_addr));
+        char addr_str[20];
+        u64_to_hex(fault_addr, addr_str);
+        console_print("  Faulting Address: ");
+        console_print(addr_str);
+        console_print("\n");
+    }
     
-    console_print("\n  SYSTEM HALTED.\n");
+    console_print("  SYSTEM HALTED.\n");
     console_print("============================================\n");
 
     for (;;) {
@@ -61,45 +93,20 @@ void idt_init(void) {
     idtp.limit = (sizeof(struct idt_entry) * 256) - 1;
     idtp.base = (uint64_t)&idt[0];
 
-    for (size_t i = 0; i < 256; i++) {
-        idt_set_gate(i, 0, 0, 0);
+    void (*isrs[])() = {
+        isr0, isr1, isr2, isr3, isr4, isr5, isr6, isr7, isr8, isr9, isr10,
+        isr11, isr12, isr13, isr14, isr15, isr16, isr17, isr18, isr19, isr20,
+        isr21, isr22, isr23, isr24, isr25, isr26, isr27, isr28, isr29, isr30, isr31
+    };
+
+    for (uint8_t i = 0; i < 32; i++) {
+        idt_set_gate(i, (uint64_t)isrs[i], KERNEL_CODE_SELECTOR, 0x8E);
     }
 
-    idt_set_gate(0, (uint64_t)isr0, 0x28, 0x8E);
-    idt_set_gate(1, (uint64_t)isr1, 0x28, 0x8E);
-    idt_set_gate(2, (uint64_t)isr2, 0x28, 0x8E);
-    idt_set_gate(3, (uint64_t)isr3, 0x28, 0x8E);
-    idt_set_gate(4, (uint64_t)isr4, 0x28, 0x8E);
-    idt_set_gate(5, (uint64_t)isr5, 0x28, 0x8E);
-    idt_set_gate(6, (uint64_t)isr6, 0x28, 0x8E);
-    idt_set_gate(7, (uint64_t)isr7, 0x28, 0x8E);
-    idt_set_gate(8, (uint64_t)isr8, 0x28, 0x8E);
-    idt_set_gate(9, (uint64_t)isr9, 0x28, 0x8E);
-    idt_set_gate(10, (uint64_t)isr10, 0x28, 0x8E);
-    idt_set_gate(11, (uint64_t)isr11, 0x28, 0x8E);
-    idt_set_gate(12, (uint64_t)isr12, 0x28, 0x8E);
-    idt_set_gate(13, (uint64_t)isr13, 0x28, 0x8E);
-    idt_set_gate(14, (uint64_t)isr14, 0x28, 0x8E);
-    idt_set_gate(15, (uint64_t)isr15, 0x28, 0x8E);
-    idt_set_gate(16, (uint64_t)isr16, 0x28, 0x8E);
-    idt_set_gate(17, (uint64_t)isr17, 0x28, 0x8E);
-    idt_set_gate(18, (uint64_t)isr18, 0x28, 0x8E);
-    idt_set_gate(19, (uint64_t)isr19, 0x28, 0x8E);
-    idt_set_gate(20, (uint64_t)isr20, 0x28, 0x8E);
-    idt_set_gate(21, (uint64_t)isr21, 0x28, 0x8E);
-    idt_set_gate(22, (uint64_t)isr22, 0x28, 0x8E);
-    idt_set_gate(23, (uint64_t)isr23, 0x28, 0x8E);
-    idt_set_gate(24, (uint64_t)isr24, 0x28, 0x8E);
-    idt_set_gate(25, (uint64_t)isr25, 0x28, 0x8E);
-    idt_set_gate(26, (uint64_t)isr26, 0x28, 0x8E);
-    idt_set_gate(27, (uint64_t)isr27, 0x28, 0x8E);
-    idt_set_gate(28, (uint64_t)isr28, 0x28, 0x8E);
-    idt_set_gate(29, (uint64_t)isr29, 0x28, 0x8E);
-    idt_set_gate(30, (uint64_t)isr30, 0x28, 0x8E);
-    idt_set_gate(31, (uint64_t)isr31, 0x28, 0x8E);
+    idt_set_gate(32, (uint64_t)irq0, KERNEL_CODE_SELECTOR, 0x8E); // Timer
+    idt_set_gate(33, (uint64_t)irq1, KERNEL_CODE_SELECTOR, 0x8E); // Teclado
 
-    idt_set_gate(32, (uint64_t)irq0, 0x28, 0x8E);
-    idt_set_gate(33, (uint64_t)irq1, 0x28, 0x8E);
+    idt_set_gate(128, (uint64_t)isr128, KERNEL_CODE_SELECTOR, 0xEE);
 
     idt_load(&idtp);
 }

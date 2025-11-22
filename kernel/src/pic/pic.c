@@ -1,53 +1,42 @@
 // kernel/src/pic/pic.c
-
 #include "pic.h"
-#include "../io/io.h" // Precisaremos de funções para ler/escrever em portos (outb/inb)
+#include "../io/io.h"
 
-// Função para inicializar e remapear o PIC 8259A.
 void pic_init(void) {
-    // Salva as máscaras atuais dos PICs
-    uint8_t mask1 = inb(PIC1_DATA);
-    uint8_t mask2 = inb(PIC2_DATA);
-
-    // ICW1: Inicia a sequência de inicialização em modo cascata.
+    // O código de inicialização (ICW1-ICW4) está perfeito. Não mexa nele.
     outb(PIC1_COMMAND, ICW1_INIT | ICW1_ICW4);
     io_wait();
     outb(PIC2_COMMAND, ICW1_INIT | ICW1_ICW4);
     io_wait();
-
-    // ICW2: Remapeia os vetores da IDT.
-    // PIC1 (Master) começa no vetor 32 (0x20).
-    // PIC2 (Slave) começa no vetor 40 (0x28).
     outb(PIC1_DATA, 0x20);
     io_wait();
     outb(PIC2_DATA, 0x28);
     io_wait();
-
-    // ICW3: Informa ao Master que há um Slave na linha IRQ2 (0x04).
     outb(PIC1_DATA, 4);
     io_wait();
-    // Informa ao Slave sua identidade em cascata (0x02).
     outb(PIC2_DATA, 2);
     io_wait();
-
-    // ICW4: Define o modo 8086.
     outb(PIC1_DATA, ICW4_8086);
     io_wait();
     outb(PIC2_DATA, ICW4_8086);
     io_wait();
 
-    outb(PIC1_DATA, mask1);
-    outb(PIC2_DATA, mask2);
+    // SUBSTITUA AS DUAS LINHAS ANTIGAS POR ESTAS DUAS:
+    // Um bit '1' DESABILITA a IRQ. Um bit '0' HABILITA.
+    // Habilita o Timer (IRQ 0) e o Teclado (IRQ 1).
+    // A linha de cascata (IRQ 2) também precisa estar habilitada.
+    // Bit:   7 6 5 4 3 2 1 0
+    // Valor: 1 1 1 1 1 0 0 0 -> Desabilita 7,6,5,4,3. Habilita 2,1,0.
+    outb(PIC1_DATA, 0b11111000);
+
+    // Desabilita todas as interrupções do PIC slave por enquanto.
+    outb(PIC2_DATA, 0xFF);
 }
 
-// Envia o sinal de Fim de Interrupção (EOI) para o(s) PIC(s).
 void pic_send_eoi(uint8_t irq) {
-    // Se a interrupção (IRQ) veio do PIC Slave (IRQs 8-15),
-    // nós precisamos enviar um EOI para o Slave primeiro.
     if (irq >= 8) {
-        outb(PIC2_COMMAND, 0x20); // Envia EOI para o PIC Slave
+        outb(PIC2_COMMAND, 0x20);
     }
-
-    // Em todos os casos, nós SEMPRE enviamos um EOI para o PIC Master.
-    outb(PIC1_COMMAND, 0x20); // Envia EOI para o PIC Master
+    outb(PIC1_COMMAND, 0x20);
 }
+

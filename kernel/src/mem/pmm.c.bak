@@ -3,19 +3,10 @@
 #include "../lib/string.h"
 #include <stdbool.h>
 
-// ✅ INCLUA O HEADER DO LIMINE PARA TER ACESSO ÀS ESTRUTURAS
-#include <limine.h>
-
-// ✅ DECLARE A VARIÁVEL EXTERNA DO HHDM OFFSET
-// Esta variável é definida em `main.c` e precisamos dela aqui.
-extern uint64_t hhdm_offset;
-
-// --- Variáveis estáticas do PMM ---
 static uint8_t* pmm_bitmap = NULL;
 static uint64_t pmm_total_pages = 0;
 static uint64_t last_checked_page = 0;
 
-// --- Funções auxiliares do bitmap (sem alterações) ---
 static void bitmap_set(uint64_t page) {
     if (page >= pmm_total_pages) return;
     pmm_bitmap[page / 8] |= (1 << (page % 8));
@@ -31,13 +22,11 @@ static bool bitmap_test(uint64_t page) {
     return (pmm_bitmap[page / 8] & (1 << (page % 8))) != 0;
 }
 
-// --- Função de Inicialização do PMM (CORRIGIDA) ---
 void pmm_init(volatile struct limine_memmap_request *memmap_request) {
     struct limine_memmap_entry **mmap = memmap_request->response->entries;
     uint64_t mmap_entry_count = memmap_request->response->entry_count;
     uint64_t highest_addr = 0;
 
-    // 1. Encontra o endereço de memória mais alto para saber o tamanho total.
     for (uint64_t i = 0; i < mmap_entry_count; i++) {
         uint64_t top = mmap[i]->base + mmap[i]->length;
         if (top > highest_addr) {
@@ -47,30 +36,19 @@ void pmm_init(volatile struct limine_memmap_request *memmap_request) {
     pmm_total_pages = highest_addr / PAGE_SIZE;
     uint64_t bitmap_size = pmm_total_pages / 8 + 1;
 
-    // 2. Encontra um local na memória física para armazenar nosso bitmap.
     for (uint64_t i = 0; i < mmap_entry_count; i++) {
         if (mmap[i]->type == LIMINE_MEMMAP_USABLE && mmap[i]->length >= bitmap_size) {
-            // ====================================================================
-            // ✅ A CORREÇÃO CRÍTICA
-            // O endereço `mmap[i]->base` é FÍSICO.
-            // O kernel opera com endereços VIRTUAIS.
-            // Convertemos o endereço físico para virtual usando o HHDM offset.
-            // ====================================================================
-            pmm_bitmap = (uint8_t*)(mmap[i]->base + hhdm_offset);
+            pmm_bitmap = (uint8_t*)mmap[i]->base;
             goto bitmap_found;
         }
     }
-
-    // Se não encontrarmos espaço, é uma falha catastrófica.
     console_set_color(0xFF0000);
     console_print("FATAL: Could not find space for PMM bitmap!\n");
     for(;;) asm("hlt");
 
 bitmap_found:
-    // 3. Inicializa o bitmap. Primeiro, marca todas as páginas como usadas (1).
     memset(pmm_bitmap, 0xFF, bitmap_size);
 
-    // 4. Agora, percorre o mapa de memória novamente e libera as páginas utilizáveis (0).
     for (uint64_t i = 0; i < mmap_entry_count; i++) {
         if (mmap[i]->type == LIMINE_MEMMAP_USABLE) {
             for (uint64_t j = 0; j < mmap[i]->length; j += PAGE_SIZE) {
@@ -78,43 +56,27 @@ bitmap_found:
             }
         }
     }
-    
-    // 5. (Opcional, mas MUITO importante) Marca as páginas usadas pelo próprio bitmap como usadas!
-    uint64_t bitmap_base_phys = (uint64_t)pmm_bitmap - hhdm_offset;
-    uint64_t bitmap_pages = (bitmap_size + PAGE_SIZE - 1) / PAGE_SIZE;
-    for (uint64_t i = 0; i < bitmap_pages; i++) {
-        bitmap_set((bitmap_base_phys / PAGE_SIZE) + i);
-    }
 }
 
-// --- Funções de Alocação e Liberação (sem alterações) ---
-
 void* pmm_alloc_page(void) {
-    // Procura a partir da última página verificada para otimizar.
     for (uint64_t page = last_checked_page; page < pmm_total_pages; page++) {
         if (!bitmap_test(page)) {
             bitmap_set(page);
             last_checked_page = page + 1;
-            // Retorna o endereço FÍSICO da página.
             void* addr = (void*)(page * PAGE_SIZE);
-            // Zera a página para segurança (opcional, mas bom).
-            memset((void*)((uint64_t)addr + hhdm_offset), 0, PAGE_SIZE);
+            memset(addr, 0, PAGE_SIZE);
             return addr;
         }
     }
-
-    // Se chegou ao fim, volta ao início.
     for (uint64_t page = 0; page < last_checked_page; page++) {
         if (!bitmap_test(page)) {
             bitmap_set(page);
             last_checked_page = page + 1;
             void* addr = (void*)(page * PAGE_SIZE);
-            memset((void*)((uint64_t)addr + hhdm_offset), 0, PAGE_SIZE);
+            memset(addr, 0, PAGE_SIZE);
             return addr;
         }
     }
-
-    // Nenhuma página livre encontrada.
     return NULL;
 }
 
@@ -142,11 +104,10 @@ void* pmm_alloc_pages(size_t num_pages) {
                 bitmap_set(start_page + i);
             }
             void* addr = (void*)(start_page * PAGE_SIZE);
-            memset((void*)((uint64_t)addr + hhdm_offset), 0, num_pages * PAGE_SIZE);
+            memset(addr, 0, num_pages * PAGE_SIZE);
             return addr;
         }
     }
-
     return NULL;
 }
 
