@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdarg.h>
+#include "serial.h"
 
 #define FONT_WIDTH 8
 #define FONT_HEIGHT 16
@@ -19,6 +20,7 @@ void klog_init(void) {
 
 static void kputchar(char c) {
     graphics_putchar(c, 0xFFFFFF, 0x000000);
+    serial_write_char(c);
 }
 
 static void kputs(const char *str) {

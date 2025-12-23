@@ -204,34 +204,33 @@ ifeq ($(ARCH),loongarch64)
 		iso_root -o $(IMAGE_NAME).iso
 endif
 	rm -rf iso_root
-
-$(IMAGE_NAME).hdd: limine/limine kernel
-	rm -f $(IMAGE_NAME).hdd
-	dd if=/dev/zero bs=1M count=0 seek=64 of=$(IMAGE_NAME).hdd
-ifeq ($(ARCH),x86_64)
-	PATH=$$PATH:/usr/sbin:/sbin sgdisk $(IMAGE_NAME).hdd -n 1:2048 -t 1:ef00 -m 1
-	./limine/limine bios-install $(IMAGE_NAME).hdd
-else
-	PATH=$$PATH:/usr/sbin:/sbin sgdisk $(IMAGE_NAME).hdd -n 1:2048 -t 1:ef00
-endif
-	mformat -i $(IMAGE_NAME).hdd@@1M
-	mmd -i $(IMAGE_NAME).hdd@@1M ::/EFI ::/EFI/BOOT ::/boot ::/boot/limine
-	mcopy -i $(IMAGE_NAME).hdd@@1M kernel/bin-$(ARCH)/kernel ::/boot
-	mcopy -i $(IMAGE_NAME).hdd@@1M limine.conf ::/boot/limine
-ifeq ($(ARCH),x86_64)
-	mcopy -i $(IMAGE_NAME).hdd@@1M limine/limine-bios.sys ::/boot/limine
-	mcopy -i $(IMAGE_NAME).hdd@@1M limine/BOOTX64.EFI ::/EFI/BOOT
-	mcopy -i $(IMAGE_NAME).hdd@@1M limine/BOOTIA32.EFI ::/EFI/BOOT
-endif
-ifeq ($(ARCH),aarch64)
-	mcopy -i $(IMAGE_NAME).hdd@@1M limine/BOOTAA64.EFI ::/EFI/BOOT
-endif
-ifeq ($(ARCH),riscv64)
-	mcopy -i $(IMAGE_NAME).hdd@@1M limine/BOOTRISCV64.EFI ::/EFI/BOOT
-endif
-ifeq ($(ARCH),loongarch64)
-	mcopy -i $(IMAGE_NAME).hdd@@1M limine/BOOTLOONGARCH64.EFI ::/EFI/BOOT
-endif
+$(IMAGE_NAME).hdd: kernel
+	@echo "  [HDD] Criando disco $(ARCH)..."
+	rm -f $@
+	
+	# 1. Imagem 64MB
+	dd if=/dev/zero bs=1M count=64 of=$@ 2>/dev/null
+	
+	# 2. FAT32 bruto (setor 0) - SEM PARTIÇÃO
+	mkfs.fat -F32 $@ 2>/dev/null || \
+	(mformat -i $@ -F 32 2>/dev/null && echo "    Usando mtools")
+	
+	# 3. Instala Limine no MBR
+	./limine/limine bios-install $@ 2>/dev/null || \
+	echo "    Aviso: Limine pode ter falhado"
+	
+	# 4. Cria diretórios e copia
+	mmd -i $@ ::/boot 2>/dev/null || true
+	mcopy -i $@ kernel/bin-x86_64/kernel ::/boot/ 2>/dev/null || \
+	(cp kernel/kernel.elf .tmp_kernel && \
+	 mcopy -i $@ .tmp_kernel ::/boot/kernel.elf 2>/dev/null && \
+	 rm -f .tmp_kernel)
+	
+	# 5. Configuração Limine
+	mcopy -i $@ limine.conf ::/boot/ 2>/dev/null || true
+	mcopy -i $@ ./limine/limine-bios.sys ::/ 2>/dev/null || true
+	
+	@echo "  [HDD] Disco criado: $@"
 
 .PHONY: clean
 clean:

@@ -1,40 +1,92 @@
-# Xld Kernel
+# XLD-OS
 
-Xld is a small experimental x86_64 operating system kernel written in C and Assembly.
-It is built for learning purposes and low-level exploration of how operating systems work.
+**GitHub:** [https://github.com/azuracode464/XLD](https://github.com/azuracode464/XLD)
 
-## Features
+## Overview
 
-- x86_64 long mode kernel
-- Custom GDT and IDT
-- Keyboard driver (IRQ-based)
-- Basic interrupt handling
-- Framebuffer output (if implemented)
-- Designed to be simple and hackable
+XLD-OS is a hobby operating system designed for learning, experimentation, and kernel development.  
+It includes a custom kernel, basic drivers, filesystem support, and UEFI/BIOS boot support.  
 
-## Goals
+> ⚠️ **Not for production use.** Licensed under GPLv2.
 
-The main goals of this project are:
+---
+> `edk2-ovmf/` is required for UEFI emulation with QEMU
 
-- Learn how modern x86_64 kernels work
-- Understand interrupts, faults, and hardware interaction
-- Build a clean and readable kernel codebase
-- Keep the project small and educational
+---
 
-This is **not** meant to be a production-ready OS.
+## Prerequisites
 
-## Build & Run
+- Linux host system (tested on Ubuntu/Debian)
+- QEMU (qemu-system-x86_64)
+- NASM (for assembly compilation)
+- GCC cross-compiler targeting `x86_64-unknown-none-elf` OR CLANG and LLD
+- MTools (for FAT32 disk image manipulation)
+- xorriso (for ISO)
+- Limine bootloader (included in the Build)
 
-This kernel is typically built using a cross-compiler and tested with an emulator like QEMU.
+---
 
-Example
+## How to Build and Run
 
-make
+1. **Create FAT32 disk image with `/root/hello.txt`:**
 
-OR
+```bash
+bash scripts/disk.sh
 
-make TOOLCHAIN=llvm
+2. Compile the kernel and run XLD-OS:
+make (for GCC)
+or
+make TOOLCHAIN=llvm (for clang)
 
-TO RUN
+bash run.sh
 
-make run
+---
+
+Features
+
+GDT: Global Descriptor Table setup
+
+Boot support: UEFI and BIOS
+
+IDT & IRQ: Interrupt Descriptor Table and IRQ handling
+
+PS/2: Keyboard input support
+
+PMM: Physical Memory Manager
+
+Heap management: kmalloc / kfree
+
+ATA PIO driver: Disk read access (primary/master detected)
+
+FAT32 driver: Filesystem detection, directory listing, reading files
+
+VFS: Basic Virtual File System integration
+
+GPLv2: Open source license
+
+
+
+
+---
+
+Current Status
+   x = ready T = Testing
+- [x] Kernel boots in BIOS and UEFI mode
+- [x] Keyboard input works
+- [x] Can read disk sectors via ATA PIO
+- [x] FAT32 detection and directory listing
+- [x] Read /root/hello.txt from disk
+- [T] Writing to FAT32
+- [ ] Multi-tasking
+- [ ] User mode
+
+---
+
+Notes
+
+XLD-OS is experimental and for learning purposes.
+
+It demonstrates basic kernel features, drivers, and bootloader integration.
+
+Contributions, bug reports, and suggestions are welcome via the GitHub repository.
+

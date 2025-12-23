@@ -1,0 +1,14 @@
+qemu-system-x86_64 \
+   -m 128M \
+   -cpu qemu64 \
+   -machine pc \
+   -drive if=pflash,format=raw,readonly=on,file=edk2-ovmf/ovmf-code-x86_64.fd \
+   -drive if=pflash,format=raw,file=edk2-ovmf/ovmf-vars-x86_64.fd \
+   -drive id=cdrom0,file=template-x86_64.iso,format=raw,if=none,media=cdrom \
+   -device ide-cd,drive=cdrom0,bus=ide.1 \
+   -drive id=hd0,file=disk.img,format=raw,if=none \
+   -device ide-hd,drive=hd0,bus=ide.0 \
+   -boot order=d \
+   -serial stdio \
+   -display vnc=:0 \
+   -no-reboot
