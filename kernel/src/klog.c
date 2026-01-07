@@ -1,3 +1,4 @@
+/* klog.c - versão corrigida com suporte a 64 bits */
 #include <stdint.h>
 #include <stddef.h>
 #include <stdarg.h>
@@ -56,29 +57,57 @@ void printk(const char *fmt, ...) {
     while (*fmt) {
         if (*fmt == '%') {
             fmt++;
+            
+            /* Verifica se é formato longo (ll) */
+            int is_long_long = 0;
+            if (*fmt == 'l' && fmt[1] == 'l') {
+                is_long_long = 1;
+                fmt += 2;
+            }
+            
             switch (*fmt) {
                 case 'd': {
-                    int val = va_arg(args, int);
-                    if (val < 0) {
-                        kputchar('-');
-                        val = -val;
+                    if (is_long_long) {
+                        int64_t val = va_arg(args, int64_t);
+                        if (val < 0) {
+                            kputchar('-');
+                            val = -val;
+                        }
+                        kputnum(val, 10);
+                    } else {
+                        int val = va_arg(args, int);
+                        if (val < 0) {
+                            kputchar('-');
+                            val = -val;
+                        }
+                        kputnum(val, 10);
                     }
-                    kputnum(val, 10);
                     break;
                 }
                 case 'u': {
-                    unsigned int val = va_arg(args, unsigned int);
-                    kputnum(val, 10);
+                    if (is_long_long) {
+                        uint64_t val = va_arg(args, uint64_t);
+                        kputnum(val, 10);
+                    } else {
+                        unsigned int val = va_arg(args, unsigned int);
+                        kputnum(val, 10);
+                    }
                     break;
                 }
                 case 'x': {
-                    unsigned int val = va_arg(args, unsigned int);
                     kputs("0x");
-                    kputnum(val, 16);
+                    if (is_long_long) {
+                        uint64_t val = va_arg(args, uint64_t);
+                        kputnum(val, 16);
+                    } else {
+                        unsigned int val = va_arg(args, unsigned int);
+                        kputnum(val, 16);
+                    }
                     break;
                 }
                 case 's': {
                     const char *str = va_arg(args, const char *);
+                    if (!str) str = "(null)";
                     kputs(str);
                     break;
                 }
@@ -89,6 +118,15 @@ void printk(const char *fmt, ...) {
                 }
                 case '%':
                     kputchar('%');
+                    break;
+                default:
+                    /* Formato desconhecido, imprime literalmente */
+                    kputchar('%');
+                    if (is_long_long) {
+                        kputchar('l');
+                        kputchar('l');
+                    }
+                    kputchar(*fmt);
                     break;
             }
         } else {
@@ -118,29 +156,57 @@ void klog(int level, const char *fmt, ...) {
     while (*fmt) {
         if (*fmt == '%') {
             fmt++;
+            
+            /* Verifica se é formato longo (ll) */
+            int is_long_long = 0;
+            if (*fmt == 'l' && fmt[1] == 'l') {
+                is_long_long = 1;
+                fmt += 2;
+            }
+            
             switch (*fmt) {
                 case 'd': {
-                    int val = va_arg(args, int);
-                    if (val < 0) {
-                        kputchar('-');
-                        val = -val;
+                    if (is_long_long) {
+                        int64_t val = va_arg(args, int64_t);
+                        if (val < 0) {
+                            kputchar('-');
+                            val = -val;
+                        }
+                        kputnum(val, 10);
+                    } else {
+                        int val = va_arg(args, int);
+                        if (val < 0) {
+                            kputchar('-');
+                            val = -val;
+                        }
+                        kputnum(val, 10);
                     }
-                    kputnum(val, 10);
                     break;
                 }
                 case 'u': {
-                    unsigned int val = va_arg(args, unsigned int);
-                    kputnum(val, 10);
+                    if (is_long_long) {
+                        uint64_t val = va_arg(args, uint64_t);
+                        kputnum(val, 10);
+                    } else {
+                        unsigned int val = va_arg(args, unsigned int);
+                        kputnum(val, 10);
+                    }
                     break;
                 }
                 case 'x': {
-                    unsigned int val = va_arg(args, unsigned int);
                     kputs("0x");
-                    kputnum(val, 16);
+                    if (is_long_long) {
+                        uint64_t val = va_arg(args, uint64_t);
+                        kputnum(val, 16);
+                    } else {
+                        unsigned int val = va_arg(args, unsigned int);
+                        kputnum(val, 16);
+                    }
                     break;
                 }
                 case 's': {
                     const char *str = va_arg(args, const char *);
+                    if (!str) str = "(null)";
                     kputs(str);
                     break;
                 }

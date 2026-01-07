@@ -38,7 +38,7 @@ if command -v mcopy > /dev/null 2>&1; then
     mmd -i disk.img ::/root
     # Copia arquivo
     mcopy -i disk.img hello.txt ::/root/hello.txt
-    
+    mcopy -i disk.img ../user/program.sbf ::/root/program.sbf
     # Lista conteúdo para verificar
     echo "=== Conteúdo do disco ==="
     mdir -i disk.img ::/
