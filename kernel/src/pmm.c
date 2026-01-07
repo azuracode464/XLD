@@ -21,7 +21,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "spinlock.h"
-#include "vmm.h"
 
 extern volatile struct limine_memmap_request memmap_request; // de limine_requests.c
 extern void klog(int level, const char *fmt, ...);
